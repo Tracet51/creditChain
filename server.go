@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"log"
 	"net"
+
+	"github.com/tracet51/creditChain/message"
 )
 
 // Server handles all incoming and outgoing messages
@@ -14,8 +16,8 @@ type Server struct {
 	AllConnections  map[string]net.Conn
 	NewConnections  chan net.Conn
 	DeadConnections chan net.Conn
-	InboundMessages chan Message
-	OutboundMessage chan Message
+	InboundMessages chan message.Message
+	OutboundMessage chan message.Message
 	Node            *Node
 
 	listener net.Listener
@@ -30,8 +32,8 @@ func CreateNewServer(node *Node) *Server {
 		AllConnections:  allConnections,
 		NewConnections:  make(chan net.Conn),
 		DeadConnections: make(chan net.Conn),
-		InboundMessages: make(chan Message),
-		OutboundMessage: make(chan Message),
+		InboundMessages: make(chan message.Message),
+		OutboundMessage: make(chan message.Message),
 		Node:            node}
 
 	return server
@@ -39,12 +41,16 @@ func CreateNewServer(node *Node) *Server {
 
 // RunServer spins up a new TCP server
 func (server *Server) RunServer() {
+
+	registerOpcodes()
+
 	var err error
 	server.listener, err = net.Listen("tcp", server.IPAddress)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
+	defer server.listener.Close()
 	log.Println("TCP Server Started at: " + server.IPAddress)
 
 	go server.acceptNewConnections()
@@ -57,7 +63,7 @@ func (server *Server) RunServer() {
 		case inboundMessage := <-server.InboundMessages:
 			// Determine the Message Payload Type
 			for _, connection := range server.AllConnections {
-				connection.Write(MessageToBytes(&inboundMessage))
+				connection.Write(message.ToBytes(&inboundMessage))
 			}
 		case outboundMessage := <-server.OutboundMessage:
 			log.Fatal(outboundMessage)
@@ -69,6 +75,10 @@ func (server *Server) RunServer() {
 	}
 }
 
+func registerOpcodes() {
+	message.Register((*message.InitMessage)(nil))
+}
+
 func (server *Server) acceptNewConnections() {
 	for {
 		connection, err := server.listener.Accept()
@@ -77,7 +87,7 @@ func (server *Server) acceptNewConnections() {
 		}
 
 		log.Println("Peer connected with address: " + connection.RemoteAddr().String())
-		server.NewConnections <- connection
+		server.handleNewConnections(connection)
 	}
 }
 
@@ -93,18 +103,19 @@ func (server *Server) readMessagesFromConnection(connectionKey string) {
 	for {
 		payload, err := reader.ReadBytes('\n')
 		if err != nil {
+			server.DeadConnections <- connection
 			break
 		}
-		var message1 MessageInt
+		var message1 message.MessageInt
 		if bytes.IndexByte(payload, byte('1')) == 0 {
+			log.Printf(string(payload))
 			err := json.Unmarshal(payload, &message1)
 			if err != nil {
 				log.Fatal(err.Error())
 			}
 		}
 		log.Printf(string(payload))
-		message := Message{Payload: "payload", NodeID: connection.RemoteAddr().String()}
+		message := message.InitMessage{}
 		server.InboundMessages <- message
 	}
-	server.DeadConnections <- connection
 }
