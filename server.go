@@ -2,8 +2,7 @@ package main
 
 import (
 	"bufio"
-	"bytes"
-	"encoding/json"
+	"fmt"
 	"log"
 	"net"
 
@@ -76,7 +75,7 @@ func (server *Server) RunServer() {
 }
 
 func registerOpcodes() {
-	message.Register((*message.InitMessage)(nil))
+	message.Register((*message.InitMessage)(nil), make(chan message.Message))
 }
 
 func (server *Server) acceptNewConnections() {
@@ -106,16 +105,8 @@ func (server *Server) readMessagesFromConnection(connectionKey string) {
 			server.DeadConnections <- connection
 			break
 		}
-		var message1 message.MessageInt
-		if bytes.IndexByte(payload, byte('1')) == 0 {
-			log.Printf(string(payload))
-			err := json.Unmarshal(payload, &message1)
-			if err != nil {
-				log.Fatal(err.Error())
-			}
-		}
+		fmt.Println(byte(0))
 		log.Printf(string(payload))
-		message := message.InitMessage{}
-		server.InboundMessages <- message
+		message.GetMessage(payload)
 	}
 }

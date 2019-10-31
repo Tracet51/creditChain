@@ -52,6 +52,8 @@ func GetMessage(message []byte) {
 			if err != nil {
 				log.Fatal(err.Error())
 			}
+
+			messageChannels[messageType] <- payload
 		}
 	}
 }
