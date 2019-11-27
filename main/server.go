@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"log"
 	"net"
-
 	"github.com/tracet51/creditChain/message"
+)
+
+const (
+	serverDataFilename = "/tmp/serverMeta.txt"
 )
 
 // Server handles all incoming and outgoing messages
@@ -17,14 +20,14 @@ type Server struct {
 	DeadConnections chan net.Conn
 	InboundMessages chan message.Message
 	OutboundMessage chan message.Message
-	Node            *Node
+	Voter            *Voter
 
 	listener net.Listener
 }
 
-// CreateNewServer makes a new server
-func CreateNewServer(node *Node) *Server {
-
+// GetServer makes a new server
+func GetServer(voter *Voter) *Server {
+	
 	allConnections := make(map[string]net.Conn)
 	server := &Server{
 		IPAddress:       "127.0.0.1:5051",
@@ -33,7 +36,7 @@ func CreateNewServer(node *Node) *Server {
 		DeadConnections: make(chan net.Conn),
 		InboundMessages: make(chan message.Message),
 		OutboundMessage: make(chan message.Message),
-		Node:            node}
+		Voter:            voter}
 
 	return server
 }
@@ -54,6 +57,7 @@ func (server *Server) RunServer() {
 
 	go server.acceptNewConnections()
 
+	// Runs the server forever by blocking channels
 	for {
 		select {
 		// We get a new connection
