@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"bufio"
@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"github.com/tracet51/creditChain/message"
+	"github.com/tracet51/creditChain/voter"
 )
 
 const (
@@ -20,7 +21,7 @@ type Server struct {
 	DeadConnections chan net.Conn
 	InboundMessages chan message.Message
 	OutboundMessage chan message.Message
-	Voter            *Voter
+	Voter            *voter.Voter
 
 	listener net.Listener
 }

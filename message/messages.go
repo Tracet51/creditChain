@@ -26,10 +26,19 @@ type MessageString struct {
 }
 
 // ToBytes Converts a Message to Bytes
-func ToBytes(message *Message) []byte {
+func ToBytes(message Message) []byte {
 	data, err := json.Marshal(message)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 	return data
+}
+
+func FromBytes(data []byte) Message {
+	var message Message
+	err := json.Unmarshal(data, &message)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	return message
 }
