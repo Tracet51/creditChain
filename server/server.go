@@ -27,7 +27,7 @@ type Server struct {
 }
 
 // GetServer makes a new server
-func GetServer(voter *Voter) *Server {
+func GetServer(voter *voter.Voter) *Server {
 	
 	allConnections := make(map[string]net.Conn)
 	server := &Server{
