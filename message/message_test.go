@@ -1,13 +1,13 @@
-package message_test
+package message
 
 import (
-	"testing"
 	"encoding/json"
+	"testing"
 
 	"github.com/tracet51/creditChain/message"
 )
 
-func TestToBytes(t *testing.T)  {
+func TestToBytes(t *testing.T) {
 	initMessage := &message.InitMessage{}
 	data := message.ToBytes(initMessage)
 	if data == nil {
@@ -17,8 +17,8 @@ func TestToBytes(t *testing.T)  {
 
 func TestFromBytes(t *testing.T) {
 	initMessage := message.InitMessage{
-		To: "Trace", 
-		From: "Kylie", 
+		To:     "Trace",
+		From:   "Kylie",
 		Amount: 50,
 	}
 	data, _ := json.Marshal(initMessage)
@@ -33,5 +33,5 @@ func TestFromBytes(t *testing.T) {
 	if ok == false {
 		t.Error(ok)
 	}
-	
+
 }
