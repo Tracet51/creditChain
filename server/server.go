@@ -6,7 +6,6 @@ import (
 	"net"
 
 	"github.com/tracet51/creditChain/message"
-	"github.com/tracet51/creditChain/voter"
 )
 
 const (
@@ -18,23 +17,27 @@ var messenger = message.Messenger{
 	OutboundMessages: make(chan message.Message),
 }
 
+type delegate interface {
+	Vote()
+}
+
 // Server handles all incoming and outgoing messages
 type Server struct {
 	IPAddress   string
 	Connections map[string]net.Conn
-	Voter       *voter.Voter
+	Delegate    delegate
 
 	listener net.Listener
 }
 
 // CreateServer makes a new server
-func CreateServer(voter *voter.Voter) *Server {
+func CreateServer(delegate delegate, port string) *Server {
 
 	connections := make(map[string]net.Conn)
 	server := &Server{
-		IPAddress:   "127.0.0.1:5051",
+		IPAddress:   "127.0.0.1:" + port,
 		Connections: connections,
-		Voter:       voter,
+		Delegate:    delegate,
 	}
 
 	return server
@@ -54,27 +57,8 @@ func (server *Server) RunServer() {
 	defer server.listener.Close()
 	log.Println("TCP Server Started at: " + server.IPAddress)
 
-	go server.acceptConnections()
+	go server.respondToMessages()
 
-	// Runs the server forever by blocking channels
-	for {
-		select {
-		case inboundMessage := <-messenger.InboundMessages:
-			// Determine the Message Payload Type
-			for _, connection := range server.Connections {
-				connection.Write(message.ToBytes(&inboundMessage))
-			}
-		case outboundMessage := <-messenger.OutboundMessages:
-			log.Fatal(outboundMessage)
-		}
-	}
-}
-
-func registerOpcodes() {
-	message.Register((*message.InitMessage)(nil), make(chan message.Message))
-}
-
-func (server *Server) acceptConnections() {
 	for {
 		connection, err := server.listener.Accept()
 		if err != nil {
@@ -82,14 +66,13 @@ func (server *Server) acceptConnections() {
 		}
 
 		log.Println("Peer connected with address: " + connection.RemoteAddr().String())
-		server.handleNewConnections(connection)
+		server.Connections[connection.RemoteAddr().String()] = connection
+		go server.readMessagesFromConnection(connection.RemoteAddr().String())
 	}
 }
 
-func (server *Server) handleNewConnections(newConnection net.Conn) {
-	// Add the connection to the list of connections
-	server.Connections[newConnection.RemoteAddr().String()] = newConnection
-	go server.readMessagesFromConnection(newConnection.RemoteAddr().String())
+func registerOpcodes() {
+	message.Register((*message.InitMessage)(nil), make(chan message.Message))
 }
 
 func (server *Server) readMessagesFromConnection(connectionKey string) {
@@ -101,11 +84,22 @@ func (server *Server) readMessagesFromConnection(connectionKey string) {
 			log.Printf("Client %s is gone\n", connection.RemoteAddr().String())
 			connection.Close()
 			delete(server.Connections, connection.RemoteAddr().String())
-			break
+			return
 		}
 		log.Printf(string(payload))
 		message.GetMessage(payload)
 
 		messenger.InboundMessages <- message.MessageInt{}
+	}
+}
+
+func (server *Server) respondToMessages() {
+	for {
+		select {
+		case inboundMessage := <-messenger.InboundMessages:
+			log.Println(inboundMessage)
+		case outboundMessage := <-messenger.OutboundMessages:
+			log.Fatal(outboundMessage.(message.InitMessage))
+		}
 	}
 }
