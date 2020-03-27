@@ -2,6 +2,7 @@ package server
 
 import (
 	"bufio"
+	"io"
 	"log"
 	"net"
 
@@ -102,4 +103,22 @@ func (server *Server) respondToMessages() {
 			log.Fatal(outboundMessage.(message.InitMessage))
 		}
 	}
+}
+
+func streamVoting(connection io.ReadWriter) chan message.Message {
+	messageBroker := make(chan message.Message)
+	reader := bufio.NewReader(connection)
+
+	go func() {
+		for {
+			payload, err := reader.ReadBytes('\n')
+			if err != nil {
+				panic("AHHH 4")
+			}
+
+			messageBroker <- payload
+		}
+	}()
+
+	return messageBroker
 }
