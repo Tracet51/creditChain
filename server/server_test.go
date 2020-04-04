@@ -37,7 +37,7 @@ func TestStreamsVoting(t *testing.T) {
 
 func TastStreamingReturnsMessage(t *testing.T) {
 	mockConnection := MockConnection{}
-	broker := streamVoting(mockConnection)
+	_ = streamVoting(mockConnection)
 }
 
 type MockConnection struct {
