@@ -5,31 +5,43 @@ import (
 	"io"
 )
 
-// Protocol ...
-type Protocol struct {
-	Transport io.ReadWriteCloser
+type Protocol interface {
+	ConnectionMade(transport io.ReadWriteCloser) (err error)
+	DataReceived(data []byte) (err error)
+	ConnectionLost() (err error)
+	Transport() io.ReadWriteCloser
+}
+
+// TCPProtocol ...
+type TCPProtocol struct {
+	transport io.ReadWriteCloser
 }
 
 // ConnectionMade ...
-func (protocol *Protocol) ConnectionMade(transport io.ReadWriteCloser) (err error) {
+func (protocol *TCPProtocol) ConnectionMade(transport io.ReadWriteCloser) (err error) {
 
 	if protocol.Transport == nil {
-		err = errors.New("Transports cannot be nil")
+		err = errors.New("transports cannot be nil")
 	}
-	protocol.Transport = transport
+	protocol.transport = transport
 
 	return err
 }
 
-// DataRecieved ...
-func (protocol *Protocol) DataRecieved(data []byte) (err error) {
+// DataReceived ...
+func (protocol *TCPProtocol) DataReceived(data []byte) (err error) {
 
-	protocol.Transport.Write(data)
+	protocol.transport.Write(data)
 	return err
 }
 
 // ConnectionLost ...
-func (protocol *Protocol) ConnectionLost() (err error) {
-	defer protocol.Transport.Close()
+func (protocol *TCPProtocol) ConnectionLost() (err error) {
+	defer protocol.transport.Close()
 	return err
+}
+
+// Transport ...
+func (protocol *TCPProtocol) Transport() io.ReadWriteCloser {
+	return protocol.transport
 }

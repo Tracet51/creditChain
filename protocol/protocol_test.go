@@ -5,18 +5,18 @@ import (
 )
 
 func TestConnectionMadeSavesTransport(t *testing.T) {
-	protocol := &Protocol{}
-	transport := mockTransport{}
+	protocol := &TCPProtocol{}
+	transport := MockTransport{}
 
 	protocol.ConnectionMade(&transport)
 	if protocol.Transport == nil {
-		t.Error("Protocol should not be nil")
+		t.Error("TCPProtocol should not be nil")
 	}
 }
 
 func TestDataSendsMessage(t *testing.T) {
-	transport := &mockTransport{}
-	protocol := &Protocol{Transport: transport}
+	transport := &MockTransport{}
+	protocol := &TCPProtocol{Transport: transport}
 
 	testCases := []struct {
 		Name string
@@ -27,7 +27,7 @@ func TestDataSendsMessage(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		protocol.DataRecieved(testCase.Data)
+		protocol.DataReceived(testCase.Data)
 		if len(transport.Memory) != len(testCase.Data) {
 			t.Errorf("%v failed, expected %v, got %v", testCase.Name, len(transport.Memory), len(testCase.Data))
 		}
@@ -35,8 +35,8 @@ func TestDataSendsMessage(t *testing.T) {
 }
 
 func TestConnectionLostClosesTransport(t *testing.T) {
-	transport := &mockTransport{Calls: make(map[string]int, 0)}
-	protocol := &Protocol{Transport: transport}
+	transport := &MockTransport{Calls: make(map[string]int, 0)}
+	protocol := &TCPProtocol{Transport: transport}
 
 	err := protocol.ConnectionLost()
 
@@ -45,24 +45,24 @@ func TestConnectionLostClosesTransport(t *testing.T) {
 	}
 }
 
-type mockTransport struct {
+type MockTransport struct {
 	Memory []byte
 	Calls  map[string]int
 }
 
-func (transport *mockTransport) Read(holder []byte) (bytesRead int, err error) {
+func (transport *MockTransport) Read(holder []byte) (bytesRead int, err error) {
 	message := "Hello World!\n"
 	copy(holder, []byte(message))
 	return len(message), nil
 }
 
-func (transport *mockTransport) Write(b []byte) (n int, err error) {
+func (transport *MockTransport) Write(b []byte) (n int, err error) {
 	transport.Memory = make([]byte, len(b))
 	copy(transport.Memory, b)
 	return len(transport.Memory), nil
 }
 
-func (transport *mockTransport) Close() error {
+func (transport *MockTransport) Close() error {
 	transport.Calls["Close"]++
 	return nil
 
