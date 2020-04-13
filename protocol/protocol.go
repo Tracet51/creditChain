@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"bufio"
 	"log"
 	"strings"
 )
@@ -46,4 +47,19 @@ func (protocol *TCPProtocol) ConnectionLost() (err error) {
 // Transport ...
 func (protocol *TCPProtocol) Transport() Transport {
 	return protocol.transport
+}
+
+// InitiateCommunication ...
+func InitiateCommunication(transport Transport, protocol Protocol) {
+	protocol.ConnectionMade(transport)
+	reader := bufio.NewReader(protocol.Transport())
+	for {
+		payload, err := reader.ReadBytes('\n')
+		if err != nil {
+			protocol.ConnectionLost()
+			break
+		} else {
+			protocol.DataReceived(payload)
+		}
+	}
 }

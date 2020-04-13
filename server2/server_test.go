@@ -8,7 +8,7 @@ import (
 
 func TestNewListenerListensOnPort(t *testing.T) {
 	ipAddress := "127.0.0.1:5051"
-	listener := NewListener(ipAddress)
+	listener := newListener(ipAddress)
 	listenerAddress := listener.Addr().String()
 	if listenerAddress != ipAddress {
 		t.Errorf("Expected Address %v but got %v", ipAddress, listenerAddress)
@@ -36,7 +36,7 @@ func TestListenForConnectionsPanics(t *testing.T) {
 	func() {
 		defer func() {
 			if r := recover(); r == nil {
-				t.Errorf("ListenForConnections should have panicked")
+				t.Errorf("listenForConnections should have panicked")
 			}
 		}()
 		// This function should cause a panic

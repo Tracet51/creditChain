@@ -15,12 +15,11 @@ func main() {
 	var port = flag.String("port", "5051", "The port which to open the main TCP Connection")
 	flag.Parse()
 
-	listener := server2.NewListener("127.0.0.1:" + *port)
-	defer listener.Close()
-	for {
-		transport := server2.ListenForConnections(listener)
-		go server2.InitiateCommunication(transport, &protocol.TCPProtocol{})
-	}
+	server := server2.NewServer("127.0.0.1:" + *port, func() protocol.Protocol {
+		return &protocol.TCPProtocol{}
+	})
+	defer server.CloseConnections()
+	server.AcceptConnections()
 }
 
 type delegate struct {
