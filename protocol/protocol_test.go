@@ -5,18 +5,20 @@ import (
 )
 
 func TestConnectionMadeSavesTransport(t *testing.T) {
+	t.Parallel()
 	protocol := &TCPProtocol{}
 	transport := MockTransport{}
 
 	protocol.ConnectionMade(&transport)
-	if protocol.Transport == nil {
+	if protocol.transport == nil {
 		t.Error("TCPProtocol should not be nil")
 	}
 }
 
 func TestDataSendsMessage(t *testing.T) {
+	t.Parallel()
 	transport := &MockTransport{}
-	protocol := &TCPProtocol{Transport: transport}
+	protocol := &TCPProtocol{transport: transport}
 
 	testCases := []struct {
 		Name string
@@ -35,8 +37,9 @@ func TestDataSendsMessage(t *testing.T) {
 }
 
 func TestConnectionLostClosesTransport(t *testing.T) {
+	t.Parallel()
 	transport := &MockTransport{Calls: make(map[string]int, 0)}
-	protocol := &TCPProtocol{Transport: transport}
+	protocol := &TCPProtocol{transport: transport}
 
 	err := protocol.ConnectionLost()
 
@@ -66,4 +69,8 @@ func (transport *MockTransport) Close() error {
 	transport.Calls["Close"]++
 	return nil
 
+}
+
+func (transport *MockTransport) Address() string {
+	return "127.0.0.1:5051"
 }

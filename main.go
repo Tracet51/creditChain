@@ -18,8 +18,8 @@ func main() {
 	listener := server2.NewListener("127.0.0.1:" + *port)
 	defer listener.Close()
 	for {
-		connection := server2.ListenForConnections(listener)
-		go server2.AttachConnection(connection, &protocol.TCPProtocol{})
+		transport := server2.ListenForConnections(listener)
+		go server2.InitiateCommunication(transport, &protocol.TCPProtocol{})
 	}
 }
 

@@ -2,47 +2,9 @@ package server2
 
 import (
 	"github.com/tracet51/creditChain/protocol"
-	"io"
+	"net"
 	"testing"
 )
-
-func TestAttachToConnection(t *testing.T) {
-	var protocol protocol.Protocol
-	protocol = &mockProtocol{}
-	transport := &mockTransport{}
-	AttachConnection(transport, protocol)
-	if protocol.Transport() == nil {
-		t.Errorf("Transport on Protocol was nil")
-	}
-}
-
-type mockTransport struct {
-	io.ReadWriteCloser
-}
-
-type mockProtocol struct {
-	transport io.ReadWriteCloser
-}
-
-// ConnectionMade ...
-func (protocol *mockProtocol) ConnectionMade(transport io.ReadWriteCloser) (err error) {
-	protocol.transport = transport
-	return nil
-}
-
-// DataReceived ...
-func (protocol *mockProtocol) DataReceived(data []byte) (err error) {
-	return nil
-}
-
-// ConnectionLost ...
-func (protocol *mockProtocol) ConnectionLost() (err error) {
-	return nil
-}
-
-func (protocol *mockProtocol) Transport() io.ReadWriteCloser {
-	return protocol.transport
-}
 
 func TestNewListenerListensOnPort(t *testing.T) {
 	ipAddress := "127.0.0.1:5051"
@@ -52,3 +14,46 @@ func TestNewListenerListensOnPort(t *testing.T) {
 		t.Errorf("Expected Address %v but got %v", ipAddress, listenerAddress)
 	}
 }
+
+func TestListenForConnections(t *testing.T) {
+	testCases := []struct{
+		name       string
+		listener net.Listener
+	}{
+		{name: "Correct Connection", listener: &successfulListener{}},
+	}
+
+	for _, testCase := range testCases {
+		connection := ListenForConnections(testCase.listener)
+		if connection == nil {
+			t.Errorf("Connection should not be nil")
+		}
+	}
+
+}
+
+func TestListenForConnectionsPanics(t *testing.T) {
+	func() {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Errorf("ListenForConnections should have panicked")
+			}
+		}()
+		// This function should cause a panic
+		ListenForConnections(&errorListener{})
+	}()
+}
+
+
+
+func TestAttachToConnection(t *testing.T) {
+	var protocol protocol.Protocol
+	protocol = &mockProtocol{}
+	transport := &mockTransport{}
+	InitiateCommunication(transport, protocol)
+	if protocol.Transport() == nil {
+		t.Errorf("Transport on Protocol was nil")
+	}
+}
+
+
