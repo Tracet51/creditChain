@@ -1,6 +1,8 @@
-package protocol
+package tcpServer
 
 import (
+	"github.com/golang/mock/gomock"
+	"net"
 	"testing"
 )
 
@@ -10,15 +12,18 @@ func TestConnectionMadeSavesTransport(t *testing.T) {
 	transport := MockTransport{}
 
 	protocol.ConnectionMade(&transport)
-	if protocol.transport == nil {
+	if protocol.connection == nil {
 		t.Error("TCPProtocol should not be nil")
 	}
+
+	gomock.NewController(t)
+
 }
 
 func TestDataSendsMessage(t *testing.T) {
 	t.Parallel()
 	transport := &MockTransport{}
-	protocol := &TCPProtocol{transport: transport}
+	protocol := &TCPProtocol{connection: transport}
 
 	testCases := []struct {
 		Name string
@@ -39,18 +44,19 @@ func TestDataSendsMessage(t *testing.T) {
 func TestConnectionLostClosesTransport(t *testing.T) {
 	t.Parallel()
 	transport := &MockTransport{Calls: make(map[string]int, 0)}
-	protocol := &TCPProtocol{transport: transport}
+	protocol := &TCPProtocol{connection: transport}
 
 	err := protocol.ConnectionLost()
 
 	if transport.Calls["Close"] != 1 || err != nil {
-		t.Errorf("Close never called on transport")
+		t.Errorf("Close never called on connection")
 	}
 }
 
 type MockTransport struct {
 	Memory []byte
 	Calls  map[string]int
+	net.Conn
 }
 
 func (transport *MockTransport) Read(holder []byte) (bytesRead int, err error) {
@@ -71,6 +77,10 @@ func (transport *MockTransport) Close() error {
 
 }
 
-func (transport *MockTransport) Address() string {
-	return "127.0.0.1:5051"
+func (transport *MockTransport) RemoteAddr() net.Addr {
+	return &net.TCPAddr{
+		IP:   []byte("127.0.0.1"),
+		Port: 0,
+		Zone: "",
+	}
 }

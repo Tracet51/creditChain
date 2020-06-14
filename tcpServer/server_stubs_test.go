@@ -1,8 +1,7 @@
-package server2
+package tcpServer
 
 import (
 	"errors"
-	"github.com/tracet51/creditChain/protocol"
 	"net"
 )
 
@@ -52,15 +51,15 @@ func (connection *mockConnection) RemoteAddr() net.Addr {
 
 
 type mockTransport struct {
-	protocol.Transport
+	net.Conn
 }
 
 type mockProtocol struct {
-	transport protocol.Transport
+	transport net.Conn
 }
 
 // ConnectionMade ...
-func (protocol *mockProtocol) ConnectionMade(transport protocol.Transport) (err error) {
+func (protocol *mockProtocol) ConnectionMade(transport net.Conn) (err error) {
 	protocol.transport = transport
 	return nil
 }
@@ -75,7 +74,7 @@ func (protocol *mockProtocol) ConnectionLost() (err error) {
 	return nil
 }
 
-func (protocol *mockProtocol) Transport() protocol.Transport {
+func (protocol *mockProtocol) Transport() net.Conn {
 	return protocol.transport
 }
 

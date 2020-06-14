@@ -2,10 +2,9 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"github.com/tracet51/creditChain/protocol"
-	"github.com/tracet51/creditChain/server2"
+	"github.com/tracet51/creditChain/tcpServer"
 	"log"
+	"net"
 )
 
 func main() {
@@ -15,16 +14,40 @@ func main() {
 	var port = flag.String("port", "5051", "The port which to open the main TCP Connection")
 	flag.Parse()
 
-	server := server2.NewServer("127.0.0.1:" + *port, func() protocol.Protocol {
-		return &protocol.TCPProtocol{}
-	})
+	connectionFactory := connectionFactoryBuilder("127.0.0.1:" + *port)
+	server := tcpServer.NewServer(protocolFactory, connectionFactory)
 	defer server.CloseConnections()
 	server.AcceptConnections()
 }
 
-type delegate struct {
+func protocolFactory() tcpServer.Protocol {
+	return &tcpServer.TCPProtocol{}
 }
 
-func (delegate delegate) Vote() {
-	fmt.Println("Voted!")
+func connectionFactoryBuilder(ipAddress string) tcpServer.ConnectionFactory {
+	listener := newListener(ipAddress)
+	return func() <-chan net.Conn {
+		connectionGenerator := make(chan net.Conn, 0)
+
+		go func() {
+			for {
+				connection, err := listener.Accept()
+				if err != nil {
+					log.Fatal(err.Error())
+				}
+				connectionGenerator <-connection
+			}
+		}()
+		return connectionGenerator
+	}
+}
+
+func newListener(ipAddress string) net.Listener {
+	listener, err := net.Listen("tcp", ipAddress)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	log.Printf("%v: Listening for connections", listener.Addr().String())
+	return listener
 }
