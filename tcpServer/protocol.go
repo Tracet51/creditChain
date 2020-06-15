@@ -4,6 +4,7 @@ package tcpServer
 
 import (
 	"bufio"
+	"context"
 	"log"
 	"net"
 	"strings"
@@ -57,16 +58,21 @@ func (protocol *TCPProtocol) Transport() net.Conn {
 }
 
 // InitiateCommunication ...
-func InitiateCommunication(conn net.Conn, protocol Protocol) {
+func InitiateCommunication(ctx context.Context, conn net.Conn, protocol Protocol) {
 	protocol.ConnectionMade(conn)
 	reader := bufio.NewReader(protocol.Transport())
 	for {
-		payload, err := reader.ReadBytes('\n')
-		if err != nil {
-			protocol.ConnectionLost()
-			break
-		} else {
-			protocol.DataReceived(payload)
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			payload, err := reader.ReadBytes('\n')
+			if err != nil {
+				protocol.ConnectionLost()
+				break
+			} else {
+				protocol.DataReceived(payload)
+			}
 		}
 	}
 }

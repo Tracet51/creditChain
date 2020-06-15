@@ -27,7 +27,8 @@ func (server *server) AcceptConnections(ctx context.Context) (err error) {
 		case <- ctx.Done():
 			return ctx.Err()
 		case connection := <-connections:
-			go InitiateCommunication(connection, server.protocolFactory())
+			protocolContext, _ := context.WithCancel(ctx)
+			go InitiateCommunication(protocolContext, connection, server.protocolFactory())
 		}
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/golang/mock/gomock"
 	"net"
+	"sync"
 	"testing"
 )
 
@@ -39,15 +40,27 @@ func TestServer_AcceptConnections(t *testing.T) {
 	defer controller.Finish()
 	tcpServer, protocol, connection := createServer(controller)
 
-	protocol.
-		EXPECT().
-		ConnectionMade(gomock.Eq(connection)).
-		Return(nil)
+	waitGroup := sync.WaitGroup{}
+	waitGroup.Add(1)
+	defer waitGroup.Wait()
 
 	ctx := context.Background()
 	cancelCtx, cancelFunc := context.WithCancel(ctx)
+	protocol.
+		EXPECT().
+		ConnectionMade(gomock.Eq(connection)).
+		DoAndReturn(func(args ...interface{}) error {
+			cancelFunc()
+			waitGroup.Done()
+			return nil
+		})
+
+	protocol.
+		EXPECT().
+		Transport().
+		AnyTimes()
+
 	tcpServer.AcceptConnections(cancelCtx)
-	cancelFunc()
 }
 
 
