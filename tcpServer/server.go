@@ -32,6 +32,3 @@ func (server *server) AcceptConnections(ctx context.Context) (err error) {
 		}
 	}
 }
-
-func (server *server) CloseConnections() {
-}

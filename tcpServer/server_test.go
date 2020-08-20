@@ -11,14 +11,14 @@ import (
 func TestNewServer(t *testing.T) {
 	controller := gomock.NewController(t)
 	defer controller.Finish()
-	tcpServer, _, _ := createServer(controller)
+	tcpServer, _, _ := createServerWithConnection(controller)
 
 	if tcpServer == nil {
 		t.Error("server should not be nil")
 	}
 }
 
-func createServer(controller *gomock.Controller) (*server, *MockProtocol, *MockConn) {
+func createServerWithConnection(controller *gomock.Controller) (*server, *MockProtocol, *MockConn) {
 	protocol := NewMockProtocol(controller)
 	protocolFactory := func() Protocol {
 		return protocol
@@ -35,10 +35,27 @@ func createServer(controller *gomock.Controller) (*server, *MockProtocol, *MockC
 	return NewServer(protocolFactory, connectionFactory), protocol, connection
 }
 
+func createServerWithoutConnection(controller *gomock.Controller) (*server, *MockProtocol) {
+	protocol := NewMockProtocol(controller)
+	protocolFactory := func() Protocol {
+		return protocol
+
+	}
+
+	connectionFactory := func() <-chan net.Conn {
+		connectionChannel := make(chan net.Conn, 0)
+		return connectionChannel
+	}
+
+	return NewServer(protocolFactory, connectionFactory), protocol
+}
+
 func TestServer_AcceptConnections(t *testing.T) {
 	controller := gomock.NewController(t)
 	defer controller.Finish()
-	tcpServer, protocol, connection := createServer(controller)
+
+
+	tcpServer, protocol, connection := createServerWithConnection(controller)
 
 	waitGroup := sync.WaitGroup{}
 	waitGroup.Add(1)
@@ -61,6 +78,20 @@ func TestServer_AcceptConnections(t *testing.T) {
 		AnyTimes()
 
 	tcpServer.AcceptConnections(cancelCtx)
+}
+
+func TestServer_AcceptConnections_Closes(t *testing.T) {
+	controller := gomock.NewController(t)
+	defer controller.Finish()
+
+	tcpServer, protocol := createServerWithoutConnection(controller)
+	cancelContext, cancelFunc := context.WithCancel(context.Background())
+
+	protocol.EXPECT().ConnectionMade(gomock.Any()).MaxTimes(0)
+
+	cancelFunc()
+
+	tcpServer.AcceptConnections(cancelContext)
 }
 
 
