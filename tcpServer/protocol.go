@@ -1,4 +1,5 @@
-//go:generate mockgen -destination mocks.go . Protocol
+//go:generate mockgen -destination=mock_protocol.go -package=tcpServer . Protocol
+//go:generate mockgen -destination=mock_net.go -package=tcpServer net Conn,Addr
 
 package tcpServer
 

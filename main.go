@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"github.com/tracet51/creditChain/tcpServer"
 	"log"
@@ -17,7 +18,8 @@ func main() {
 	connectionFactory := connectionFactoryBuilder("127.0.0.1:" + *port)
 	server := tcpServer.NewServer(protocolFactory, connectionFactory)
 	defer server.CloseConnections()
-	server.AcceptConnections()
+	ctx := context.Background()
+	server.AcceptConnections(ctx)
 }
 
 func protocolFactory() tcpServer.Protocol {
