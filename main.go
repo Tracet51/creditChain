@@ -17,8 +17,8 @@ func main() {
 
 	connectionFactory := connectionFactoryBuilder("127.0.0.1:" + *port)
 	server := tcpServer.NewServer(protocolFactory, connectionFactory)
-	defer server.CloseConnections()
-	ctx := context.Background()
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	defer cancelFunc()
 	server.AcceptConnections(ctx)
 }
 
