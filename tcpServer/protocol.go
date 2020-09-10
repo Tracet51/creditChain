@@ -34,10 +34,10 @@ func (protocol *TCPProtocol) ConnectionMade(conn net.Conn) (err error) {
 func (protocol *TCPProtocol) DataReceived(data []byte) (err error) {
 
 	message := strings.TrimRight(string(data), "\r\n")
-	log.Printf("%v: Sent: Local Message: %v ", protocol.address(), message)
+	log.Printf("%v -> Local: %v ", protocol.address(), message)
 
 	protocol.connection.Write(data)
-	log.Printf("Local: Sent: %v Message: %v ", protocol.address(), message)
+	log.Printf("Local -> %v: %v ", protocol.address(), message)
 
 	return err
 }
@@ -61,6 +61,7 @@ func (protocol *TCPProtocol) Transport() net.Conn {
 // InitiateCommunication ...
 func InitiateCommunication(ctx context.Context, conn net.Conn, protocol Protocol) {
 	protocol.ConnectionMade(conn)
+	ctx, cancelFunc := context.WithCancel(ctx)
 	reader := bufio.NewReader(protocol.Transport())
 	for {
 		select {
@@ -70,7 +71,7 @@ func InitiateCommunication(ctx context.Context, conn net.Conn, protocol Protocol
 			payload, err := reader.ReadBytes('\n')
 			if err != nil {
 				protocol.ConnectionLost()
-				break
+				cancelFunc()
 			} else {
 				protocol.DataReceived(payload)
 			}
